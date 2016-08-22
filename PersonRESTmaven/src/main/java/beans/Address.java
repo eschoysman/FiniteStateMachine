@@ -11,4 +11,7 @@ public class Address {
 	private String address;
 	private String city;
 
+	
+	public static void branch() {}
+	
 }
