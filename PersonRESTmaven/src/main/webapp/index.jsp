@@ -48,6 +48,6 @@ $(function() {
 	<tr><td colspan="2" style="text-align: center;"><input type="submit" value="Submit" style="width: 50%"></td></tr>
 </table>
 </form>
-<p>Lista persone: <a href="person/gestione">JSON</a>/<a href="person/gestione/xml">XML</a></p>
+<p>get lista persone: <a href="person/gestione">JSON</a>/<a href="person/gestione/xml">XML</a></p>
 </body>
 </html>
