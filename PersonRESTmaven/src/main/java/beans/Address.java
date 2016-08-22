@@ -13,5 +13,6 @@ public class Address {
 
 	
 	public static void master(){}
+	public static void branch(){}
 	
 }
