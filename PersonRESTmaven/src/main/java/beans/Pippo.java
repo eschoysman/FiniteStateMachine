@@ -3,7 +3,7 @@ package beans;
 public class Pippo extends Person {
 
 	public Pippo() {
-		super("Pippo", "Paperino", 2, null);
+		super("Pippo", "Jr", 2, null);
 	}
 	
 }
