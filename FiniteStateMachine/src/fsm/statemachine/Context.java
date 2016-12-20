@@ -1,5 +1,5 @@
 package fsm.statemachine;
 
-public interface Context extends java.io.Serializable {
+public interface Context extends java.io.Serializable  {
 
 }

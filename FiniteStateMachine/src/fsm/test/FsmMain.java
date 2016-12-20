@@ -2,16 +2,19 @@ package fsm.test;
 
 import java.util.function.Consumer;
 
-import fsm.statemachine.RESULT;
-import fsm.statemachine.State;
-import fsm.statemachine.StateMachine;
+import fsm.statemachine.IState;
+import fsm.statemachine.StateMachine2;
 import fsm.statemachine.StateMachineFunction;
-import fsm.statemachine.TRANSITION_ERROR_HANDLING;
 import fsm.statemachine.exceptions.StateMachineException;
 import fsm.statemachine.exceptions.TransitionException;
+import fsm.statemachine.impl.RESULT;
+import fsm.statemachine.impl.State;
+import fsm.statemachine.impl.TRANSITION_ERROR_HANDLING;
+import fsm.statemachine.impl.Transition;
 
 public class FsmMain {
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static void main(String[] args) throws StateMachineException {
 
 		StateMachineFunction<MyContext,MyEvent> stateEnterAction = (f,e,t,c)->System.out.println("Enter state \""+t.getName()+"\"");
@@ -22,16 +25,16 @@ public class FsmMain {
 		StateMachineFunction<MyContext,MyEvent> transitionExitAction = (f,e,t,c)->System.out.println("\tExit transition from \""+f.getName()+"\" to \""+t.getName()+"\" on event \""+e.getEvent()+"\"");
 		StateMachineFunction<MyContext,MyEvent> transitionExitAction2 = (f,e,t,c)->{throw new TransitionException("prova");};
 		
-		StateMachine<MyContext,MyEvent> sm = new StateMachine<MyContext,MyEvent>();
-		State<MyContext, MyEvent> s0 = sm.addStartState("s0").setActions(stateEnterAction,stateExecuteAction,stateExitAction);
-		State<MyContext, MyEvent> s1 = sm.addState("s1").setActions(stateEnterAction,stateExecuteAction,stateExitAction);
-		State<MyContext, MyEvent> s2 = sm.addState("s2").setFinal(true).setActions(stateEnterAction,stateExecuteAction,stateExitAction);
+		StateMachine2<MyContext,MyEvent> sm = new StateMachine2<MyContext,MyEvent>();
+		IState<MyContext, MyEvent> s0 = sm.addStartState(new State("s0").setActions(stateEnterAction,stateExecuteAction,stateExitAction));
+		IState<MyContext, MyEvent> s1 = sm.addStartState(new State("s1").setActions(stateEnterAction,stateExecuteAction,stateExitAction));
+		IState<MyContext, MyEvent> s2 = sm.addStartState(new State("s2").setActions(stateEnterAction,stateExecuteAction,stateExitAction));
 		
 		sm.addEvents(MyEvent.values());
 
-		sm.addTransition(s0,MyEvent.VAI,s1,transitionEnterAction,transitionExecuteAction,transitionExitAction);
-		sm.addTransition(s1,MyEvent.VAI,s2,transitionEnterAction,transitionExecuteAction,transitionExitAction2);
-		sm.addTransition(s2,MyEvent.VAI,s0,transitionEnterAction,transitionExecuteAction,transitionExitAction);
+		sm.addTransition(new Transition(s0,MyEvent.VAI,s1,transitionEnterAction,transitionExecuteAction,transitionExitAction,null));
+		sm.addTransition(new Transition(s1,MyEvent.VAI,s2).setActions(transitionEnterAction,transitionExecuteAction,transitionExitAction2));
+		sm.addTransition(new Transition(s2,MyEvent.VAI,s0,transitionEnterAction,transitionExecuteAction,transitionExitAction,null));
 
 		sm.setTransitionErrorHandler(TRANSITION_ERROR_HANDLING.ROLLBACK);
 		

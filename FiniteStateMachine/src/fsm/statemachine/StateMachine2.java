@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 
 import fsm.statemachine.exceptions.StateMachineException;
 import fsm.statemachine.exceptions.TransitionException;
@@ -20,11 +19,10 @@ import fsm.statemachine.exceptions.UndefinedEventException;
 import fsm.statemachine.exceptions.UndefinedStateException;
 import fsm.statemachine.exceptions.UnexpectedTransitionException;
 import fsm.statemachine.impl.RESULT;
-import fsm.statemachine.impl.State;
 import fsm.statemachine.impl.TRANSITION_ERROR_HANDLING;
 import fsm.statemachine.impl.Tuple;
 
-public class StateMachine<C extends Context,E> {
+public class StateMachine2<C extends Context,E> {
 	
 	private IState<C, E> currentState;
 	private Set<IState<C,E>> statesPool;
@@ -34,67 +32,21 @@ public class StateMachine<C extends Context,E> {
 	private TRANSITION_ERROR_HANDLING handler = TRANSITION_ERROR_HANDLING.ERROR;
 	private RESULT result = null;
 	
-	public StateMachine() {
+	public StateMachine2() {
 		this.statesPool = new HashSet<>();
 		this.eventsPool = new HashSet<>();
 		this.transitionsPool = new HashSet<>();
 		this.stateMachine = new HashMap<Tuple<C,E>,ITransition<C,E>>();
 	}
 	
-	public IState<C, E> addState() {
-		IState<C,E> state = new State<C,E>();
-		statesPool.add(state);
-		return state;
+	public IState<C,E> addState(IState<C,E> state) {
+		return statesPool.add(state) ? state : null;
 	}
-	public IState<C, E> addStartState() {
-		IState<C,E> state = new State<C,E>();
-		statesPool.add(state);
+	public IState<C,E> addStartState(IState<C,E> state) {
 		this.currentState = state;
-		return state;
-	}
-	public IState<C, E> addState(String name) {
-		return addState(name,null,null,null);
-	}
-	public IState<C, E> addStartState(String name) {
-		return addStartState(name,null,null,null);
-	}
-	public boolean addState(IState<C,E> state) {
-		return statesPool.add(state);
-	}
-	public boolean addStartState(IState<C,E> state) {
-		this.currentState = state;
-		return statesPool.add(state);
-	}
-	public IState<C, E> addState(String name, StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
-		IState<C,E> state = new State<C,E>(name,enterAction,executeAction,exitAction);
-		statesPool.add(state);
-		return state;
-	}
-	public IState<C, E> addStartState(String name, StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
-		IState<C,E> state = new State<C,E>(name,enterAction,executeAction,exitAction);
-		statesPool.add(state);
-		this.currentState = state;
-		return state;
+		return addState(state);
 	}
 	
-	public ITransition<C, E> addTransition(IState<C, E> from, E event, IState<C, E> to) throws UndefinedStateException {
-		return addTransition(from,getEvent(event),to,null,null,null,handler);
-	}
-	public ITransition<C, E> addTransition(IState<C, E> from, Event<E> event, IState<C, E> to) throws UndefinedStateException {
-		return addTransition(from,event,to,null,null,null,handler);
-	}
-	public ITransition<C, E> addTransition(IState<C, E> from, E event, IState<C, E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction) throws UndefinedStateException {
-		return addTransition(from, getEvent(event),to,enterAction,executeAction,exitAction,handler);
-	}
-	public ITransition<C, E> addTransition(IState<C, E> from, Event<E> event, IState<C, E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction) throws UndefinedStateException {
-		return addTransition(from,event,to,enterAction,executeAction,exitAction,handler);
-	}
-	public ITransition<C, E> addTransition(IState<C, E> from, E event, IState<C, E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction, TRANSITION_ERROR_HANDLING handler) throws UndefinedStateException {
-		return addTransition(from,getEvent(event),to,enterAction,executeAction,exitAction,handler);
-	}
-	public ITransition<C, E> addTransition(IState<C, E> from, Event<E> event, IState<C, E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction, TRANSITION_ERROR_HANDLING handler) throws UndefinedStateException {
-		return addTransition(new AbstractTransition<C,E>(from,event,to,enterAction,executeAction,exitAction, handler));
-	}
 	public ITransition<C, E> addTransition(ITransition<C,E> transition) throws UndefinedStateException {
 		if(getState(transition.getDestination())==null) {
 			throw new UndefinedStateException("Destination state not found.");
@@ -121,14 +73,17 @@ public class StateMachine<C extends Context,E> {
 			addEvent(event);
 	}
 	
-	public void setTransitionErrorHandler(TRANSITION_ERROR_HANDLING handler) {
+	public StateMachine2<C,E> setTransitionErrorHandler(TRANSITION_ERROR_HANDLING handler) {
 		this.handler = handler;
+		return this;
 	}
-	public void setStartState(IState<C, E> startState) {
+	public StateMachine2<C,E> setStartState(IState<C, E> startState) {
 		this.currentState = startState;
+		return this;
 	}
-	public void setFinalState(IState<C, E> finalState) {
+	public StateMachine2<C,E> setFinalState(IState<C, E> finalState) {
 		finalState.setFinal(true);
+		return this;
 	}
 	
 	public boolean isFinalState() throws UndefinedStateException {

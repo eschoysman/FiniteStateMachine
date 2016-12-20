@@ -1,10 +1,14 @@
-package fsm.statemachine;
+package fsm.statemachine.impl;
+
+import fsm.statemachine.Event;
+import fsm.statemachine.IState;
+import fsm.statemachine.Context;
 
 public final class Tuple<C extends Context, E> {
-	private State<C, E> state;
+	private IState<C, E> state;
 	private Event<E> event;
 
-	public Tuple(State<C, E> state, Event<E> event) {
+	public Tuple(IState<C, E> state, Event<E> event) {
 		this.state = state;
 		this.event = event;
 	}

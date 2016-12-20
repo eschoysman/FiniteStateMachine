@@ -3,27 +3,27 @@ package fsm.statemachine;
 import java.util.function.Consumer;
 
 import fsm.statemachine.exceptions.StateMachineException;
+import fsm.statemachine.impl.State;
 
-public class State<C extends Context,E> {
+public class AbstractState<C extends Context,E> implements IState<C,E> {
 
-	private static int generalId = 0;
-	private int id;
+	protected static int generalId = 0;
+	protected int id;
 	private String name;
 	private boolean isFinal = false;
-	
-	private StateMachineFunction<C,E> enterAction = (f,e,t,c)->{};
-	private Consumer<C> executeAction = c->{};
-	private StateMachineFunction<C,E> exitAction = (f,e,t,c)->{};
+	private StateMachineFunction<C,E> enterAction;
+	private Consumer<C> executeAction;
+	private StateMachineFunction<C,E> exitAction;
 
-	public State() {
+	protected AbstractState() {
 		id = generalId++;
 		this.setName("state"+id);
 	}
-	public State(String name) {
+	protected AbstractState(String name) {
 		id = generalId++;
 		this.setName(name);
 	}
-	public State(String name, StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
+	protected AbstractState(String name, StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
 		id = generalId++;
 		this.setName(name);
 		setEnterAction(enterAction);
@@ -31,61 +31,67 @@ public class State<C extends Context,E> {
 		setExitAction(exitAction);
 	}
 
-	public State<C,E> setEnterAction(StateMachineFunction<C,E> enterAction) {
-		if(enterAction!=null)
-			this.enterAction = enterAction;
+	@Override
+	public IState<C, E> setEnterAction(StateMachineFunction<C,E> enterAction) {
+		this.enterAction = enterAction;
 		return this;
 	}
-	public State<C,E> setExecuteAction(Consumer<C> executeAction) {
-		if(executeAction!=null)
-			this.executeAction = executeAction;
+	@Override
+	public IState<C, E> setExecuteAction(Consumer<C> executeAction) {
+		this.executeAction = executeAction;
 		return this;
 	}
-	public State<C,E> setExitAction(StateMachineFunction<C,E> exitAction) {
-		if(exitAction!=null)
-			this.exitAction = exitAction;
+	@Override
+	public IState<C, E> setExitAction(StateMachineFunction<C,E> exitAction) {
+		this.exitAction = exitAction;
 		return this;
 	}
-	
-	public State<C,E> setActions(StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
+	@Override
+	public IState<C, E> setActions(StateMachineFunction<C,E> enterAction, Consumer<C> executeAction, StateMachineFunction<C,E> exitAction) {
 		return setEnterAction(enterAction).setExecuteAction(executeAction).setExitAction(exitAction);
 	}
 	
-	public State<C,E> setFinal(boolean isFinal) {
+	@Override
+	public IState<C, E> setFinal(boolean isFinal) {
 		this.isFinal = isFinal;
 		return this;
 	}
+	@Override
 	public boolean isFinal() {
 		return this.isFinal;
 	}
-	
-	public void enter(State<C,E> from, Event<E> event, State<C,E> to, C context) throws StateMachineException {
+
+	@Override
+	public void enter(IState<C, E> from, Event<E> event, IState<C, E> to, C context) throws StateMachineException {
 		if(enterAction!=null)
 			enterAction.execute(from, event, to, context);
 	}
+	@Override
 	public void execute(C context) {
 		if(executeAction!=null)
 			executeAction.accept(context);
 	}
-	public void exit(State<C,E> from, Event<E> event, State<C,E> to, C context) throws StateMachineException{
+	@Override
+	public void exit(IState<C, E> from, Event<E> event, IState<C, E> to, C context) throws StateMachineException {
 		if(exitAction!=null)
 			exitAction.execute(from, event, to, context);
 	}
-	
+
+	@Override
 	public String getName() {
 		return name;
 	}
-	public void setName(String name) {
+	@Override
+	public IState<C, E> setName(String name) {
 		this.name = name;
+		return this;
 	}
-	
+
+	@Override
 	public int getId() {
 		return id;
 	}
-	public void setId(int id) {
-		this.id = id;
-	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -93,6 +99,7 @@ public class State<C extends Context,E> {
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		return result;
 	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -104,9 +111,9 @@ public class State<C extends Context,E> {
 		@SuppressWarnings("rawtypes")
 		State other = (State) obj;
 		if (name == null) {
-			if (other.name != null)
+			if (other.getName() != null)
 				return false;
-		} else if (!name.equals(other.name))
+		} else if (!name.equals(other.getName()))
 			return false;
 		return true;
 	}
@@ -115,5 +122,5 @@ public class State<C extends Context,E> {
 	public String toString() {
 		return "State [name=" + name + ", isFinal=" + isFinal + "]";
 	}
-	
+
 }
