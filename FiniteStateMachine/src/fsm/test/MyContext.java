@@ -1,8 +1,8 @@
-package fsm;
+package fsm.test;
 
-import java.io.Serializable;
+import fsm.statemachine.Context;
 
-public class MyContext implements Serializable {
+public class MyContext implements Context {
 
 	private String contesto;
 

@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 
 import fsm.statemachine.exceptions.StateMachineException;
 
-public class State<C,E> {
+public class State<C extends Context,E> {
 
 	private static int generalId = 0;
 	private int id;

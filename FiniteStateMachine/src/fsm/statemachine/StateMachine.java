@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,18 +14,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import fsm.statemachine.exceptions.*;
+import fsm.statemachine.exceptions.StateMachineException;
+import fsm.statemachine.exceptions.TransitionException;
+import fsm.statemachine.exceptions.UndefinedEventException;
+import fsm.statemachine.exceptions.UndefinedStateException;
+import fsm.statemachine.exceptions.UnexpectedTransitionException;
 
-public class StateMachine<C,E> {
-	
-	public enum TRANSITION_ERROR_HANDLING {ERROR,IGNORE}
-	public enum RESULT {SUCCESS,RUNNING,ERROR}
+public class StateMachine<C extends Context,E> {
 	
 	private State<C,E> currentState;
 	private Set<State<C,E>> statesPool;
 	private Set<Event<E>> eventsPool;
 	private Set<Transition<C,E>> transitionsPool;
-	private Map<Tuple<State<C,E>, Event<E>>, Transition<C,E>> stateMachine;
+	private Map<Tuple<C,E>, Transition<C,E>> stateMachine;
 	private TRANSITION_ERROR_HANDLING handler = TRANSITION_ERROR_HANDLING.ERROR;
 	private RESULT result = null;
 	
@@ -32,7 +34,7 @@ public class StateMachine<C,E> {
 		this.statesPool = new HashSet<>();
 		this.eventsPool = new HashSet<>();
 		this.transitionsPool = new HashSet<>();
-		this.stateMachine = new HashMap<Tuple<State<C,E>,Event<E>>,Transition<C,E>>();
+		this.stateMachine = new HashMap<Tuple<C,E>,Transition<C,E>>();
 	}
 	
 	public State<C,E> addState() {
@@ -71,23 +73,33 @@ public class StateMachine<C,E> {
 		return state;
 	}
 	
-	public Transition<C,E> addTransition(State<C,E> from, Event<E> event, State<C,E> to) throws UndefinedStateException {
-		return addTransition(from, event, to, null, null, null);
+	public Transition<C,E> addTransition(State<C,E> from, E event, State<C,E> to) throws UndefinedStateException {
+		return addTransition(from,getEvent(event),to,null,null,null,handler);
 	}
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public Transition<C,E> addTransition(State<C,E> from, Event<E> event, State<C,E> to) throws UndefinedStateException {
+		return addTransition(from,event,to,null,null,null,handler);
+	}
+	public Transition<C,E> addTransition(State<C,E> from, E event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction) throws UndefinedStateException {
+		return addTransition(from, getEvent(event),to,enterAction,executeAction,exitAction,handler);
+	}
 	public Transition<C,E> addTransition(State<C,E> from, Event<E> event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction) throws UndefinedStateException {
+		return addTransition(from,event,to,enterAction,executeAction,exitAction,handler);
+	}
+	public Transition<C,E> addTransition(State<C,E> from, E event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction, TRANSITION_ERROR_HANDLING handler) throws UndefinedStateException {
+		return addTransition(from,getEvent(event),to,enterAction,executeAction,exitAction,handler);
+	}
+	public Transition<C,E> addTransition(State<C,E> from, Event<E> event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction, TRANSITION_ERROR_HANDLING handler) throws UndefinedStateException {
 		if(getState(to)==null) {
 			throw new UndefinedStateException("Destination state not found.");
 		}
-		Transition<C,E> transition = new Transition<C,E>(from,event,to,enterAction,executeAction,exitAction);
+		Transition<C,E> transition = new Transition<C,E>(from,event,to,enterAction,executeAction,exitAction, handler);
 		transitionsPool.add(transition);
-		stateMachine.put(new Tuple(from,event),transition);
+		stateMachine.put(new Tuple<C,E>(from,event),transition);
 		return transition;
 	}
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public boolean addTransition(Transition<C,E> transition) {
 		boolean ok = transitionsPool.add(transition);
-		if(ok) stateMachine.put(new Tuple(transition.getFrom(),transition.getEvent()),transition);
+		if(ok) stateMachine.put(new Tuple<C,E>(transition.getFrom(),transition.getEvent()),transition);
 		return ok;
 	}
 	
@@ -98,6 +110,14 @@ public class StateMachine<C,E> {
 	}
 	public boolean addEvent(Event<E> event) {
 		return eventsPool.add(event);
+	}
+	public void addEvents(Collection<E> events) throws UndefinedEventException {
+		events.forEach(this::addEvent);
+	}
+	@SuppressWarnings("unchecked")
+	public void addEvents(E... events) throws UndefinedEventException {
+		for(E event : events)
+			addEvent(event);
 	}
 	
 	public void setTransitionErrorHandler(TRANSITION_ERROR_HANDLING handler) {
@@ -156,19 +176,21 @@ System.out.println("context start: "+context);
 		try {
 			trans.fire(currentState,event,toState,context);
 			result = RESULT.SUCCESS;
-		} catch(UnexpectedTransitionException e) {
-			if(handler == TRANSITION_ERROR_HANDLING.ERROR) {
-				result = RESULT.ERROR;
-				throw e;
-			}
-			else {
-				result = RESULT.ERROR;
-				System.err.println("Error during transition. TRANSITION_ERROR_HANDLING="+handler+" selected, the transition is ignored and the transition is rollbacked.");
-				toState = currentState;
-			}
-		} finally {
-			context = copy(contextBak);
 			currentState = toState;
+		} catch(UnexpectedTransitionException e) {
+			result = RESULT.ERROR;
+			TRANSITION_ERROR_HANDLING tmpHandler = trans.getHandler()==null ? handler : trans.getHandler();
+			switch(tmpHandler) {
+				case ERROR:
+					throw e;
+				case ROLLBACK:
+					System.err.println("Error during transition. TRANSITION_ERROR_HANDLING="+handler+" selected, the transition is rollbacked.");
+					context = copy(contextBak);
+					break;
+				case IGNORE:
+					currentState = toState;
+					break;
+			}
 		}
 System.out.println("context end: "+context);
 		return currentState;
@@ -210,19 +232,16 @@ System.out.println("context end: "+context);
 		return result;
 	}
 
-	public Event<E> getTransitionEvent(State<C,E> a, State<C,E> b) {
-		if(getState(a)==null || getState(b)==null)
-			return null;
-		for(Event<E> e : eventsPool) {
-			@SuppressWarnings({ "rawtypes", "unchecked" })
-			Tuple<C,E> tmp = new Tuple(a,e);
-			if(stateMachine.get(tmp)!=null && stateMachine.get(tmp).getDestination().equals(b))
-				return e;
-		}
-		return null;
+	public Set<Transition<C,E>> getTransitions() {
+		return transitionsPool;
+	}
+	public Set<Event<E>> getEvents() {
+		return eventsPool;
+	}
+	public Set<State<C,E>> getStates() {
+		return statesPool;
 	}
 	
-
 	public RESULT getTransitionResult() {
 		return result;
 	}

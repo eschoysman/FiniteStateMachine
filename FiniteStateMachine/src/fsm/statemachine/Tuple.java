@@ -1,6 +1,6 @@
 package fsm.statemachine;
 
-public final class Tuple<C, E> {
+public final class Tuple<C extends Context, E> {
 	private State<C, E> state;
 	private Event<E> event;
 

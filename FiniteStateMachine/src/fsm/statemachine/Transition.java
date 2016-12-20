@@ -3,11 +3,12 @@ package fsm.statemachine;
 import fsm.statemachine.exceptions.StateMachineException;
 import fsm.statemachine.exceptions.UnexpectedTransitionException;
 
-public class Transition<C,E> {
+public class Transition<C extends Context,E> {
 	private static int generalId = 0;
 	private int id;
 	private State<C,E> from,destination;
 	private Event<E> event;
+	private TRANSITION_ERROR_HANDLING handler;
 	
 	private StateMachineFunction<C,E> enterAction = (f,e,t,c)->{};
 	private StateMachineFunction<C,E> executeAction = (f,e,t,c)->{};
@@ -19,7 +20,7 @@ public class Transition<C,E> {
 		this.event = event;
 		this.destination = to;
 	}
-	public Transition(State<C,E> from, Event<E> event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction) {
+	public Transition(State<C,E> from, Event<E> event, State<C,E> to, StateMachineFunction<C,E> enterAction, StateMachineFunction<C,E> executeAction, StateMachineFunction<C,E> exitAction, TRANSITION_ERROR_HANDLING handler) {
 		setId(generalId++);
 		this.from = from;
 		this.event = event;
@@ -27,6 +28,8 @@ public class Transition<C,E> {
 		setEnterAction(enterAction);
 		setExecuteAction(executeAction);
 		setExitAction(exitAction);
+		setExitAction(exitAction);
+		setHandler(handler);
 	}
 	
 	public Transition<C,E> setEnterAction(StateMachineFunction<C,E> enterAction) {
@@ -88,6 +91,13 @@ public class Transition<C,E> {
 	}
 	public State<C,E> getDestination() {
 		return this.destination;
+	}
+	
+	public TRANSITION_ERROR_HANDLING getHandler() {
+		return handler;
+	}
+	public void setHandler(TRANSITION_ERROR_HANDLING handler) {
+		this.handler = handler;
 	}
 	
 	@Override
