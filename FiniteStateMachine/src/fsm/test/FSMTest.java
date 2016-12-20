@@ -54,7 +54,7 @@ public class FSMTest {
 		assertEquals(context.getContesto(), "Pippoooo");
 		assertEquals(sm.getCurrentState().getName(), "s1");
 		try{
-		sm.fire("vai", context);
+			sm.fire("vai", context);
 		} catch (UnexpectedTransitionException e){
 			sm.executeState(context);
 			assertEquals(context.getContesto(), "Pippoooo");
