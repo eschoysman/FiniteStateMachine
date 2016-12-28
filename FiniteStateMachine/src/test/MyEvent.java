@@ -1,4 +1,4 @@
-package fsm.test;
+package test;
 
 public enum MyEvent {
 

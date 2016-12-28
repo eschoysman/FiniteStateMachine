@@ -1,4 +1,4 @@
-package fsm.test;
+package test;
 
 import java.util.function.Consumer;
 
